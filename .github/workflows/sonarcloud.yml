@@ -40,9 +40,9 @@ jobs:
 
       # 2) BUILD
       - name: Restore
-        run: dotnet restore DummyProject/DummyProject.sln
+        run: dotnet restore DummyProject.sln
       - name: Build
-        run: dotnet build DummyProject/DummyProject.sln -c Release --no-restore
+        run: dotnet build DummyProject.sln -c Release --no-restore
 
       # 3) END: SonarScanner
       - name: SonarScanner End
