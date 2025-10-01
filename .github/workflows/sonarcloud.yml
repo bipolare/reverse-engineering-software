@@ -1,53 +1,58 @@
-name: .NET + SonarCloud Analysis
+name: .NET SonarCloud Analysis
 
 on:
   push:
     branches:
       - main
   pull_request:
-    branches:
-      - main
 
 jobs:
-  build-and-analyze:
+  build:
     runs-on: windows-latest
 
     env:
       DOTNET_ROOT: C:\Program Files\dotnet
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x  # укажи версию, которую используешь
+          dotnet-version: 8.0.x
 
-      - name: Install SonarScanner
+      - name: Install SonarScanner tool
+        shell: pwsh
         run: |
-          dotnet tool install --global dotnet-sonarscanner
-          echo "$Env:PATH += ';$Env:USERPROFILE\.dotnet\tools'"
+          dotnet tool install --global dotnet-sonarscanner --version 10.4.1
+          $Env:PATH += ";$Env:USERPROFILE\.dotnet\tools"
 
-      - name: Begin SonarScanner
+      - name: Begin SonarCloud analysis
+        shell: pwsh
         run: |
-          dotnet sonarscanner begin /k:"bipolare_reverse-engineering-software" \
-                                   /o:"bipolare" \
-                                   /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
-                                   /d:sonar.cs.opencover.reportsPaths="${{ github.workspace }}\coverage.opencover.xml" \
-                                   /d:sonar.verbose=true
+          dotnet sonarscanner begin `
+            /k:"bipolare_reverse-engineering-software" `
+            /o:"bipolare" `
+            /d:sonar.login="$Env:SONAR_TOKEN" `
+            /d:sonar.cs.opencover.reportsPaths="$Env:GITHUB_WORKSPACE\coverage.opencover.xml"
 
       - name: Restore dependencies
         run: dotnet restore DummyProject.sln
 
       - name: Build solution
-        run: dotnet build DummyProject.sln --no-restore
+        run: dotnet build DummyProject.sln --no-restore --configuration Release
 
       - name: Run tests with coverage
         run: |
-          dotnet test DummyProject.sln --no-build --collect:"XPlat Code Coverage" --results-directory:"$Env:GITHUB_WORKSPACE\TestResults"
-          # конвертация в opencover, если нужно
-          reportgenerator "-reports:$Env:GITHUB_WORKSPACE\TestResults/**/coverage.cobertura.xml" "-targetdir:$Env:GITHUB_WORKSPACE\coverage-report" -reporttypes:Xml
+          dotnet test DummyProject.sln `
+            --no-build `
+            --configuration Release `
+            /p:CollectCoverage=true `
+            /p:CoverletOutput="$Env:GITHUB_WORKSPACE\coverage.opencover.xml" `
+            /p:CoverletOutputFormat=opencover
 
-      - name: End SonarScanner
-        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+      - name: End SonarCloud analysis
+        shell: pwsh
+        run: dotnet sonarscanner end /d:sonar.login="$Env:SONAR_TOKEN"
