@@ -15,60 +15,51 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     steps:
-      # 1. Забираємо код
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Встановлюємо .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
 
-      # 3. Встановлюємо SonarScanner
       - name: Install SonarScanner tool
         shell: pwsh
         run: |
           dotnet tool install --global dotnet-sonarscanner --version 10.4.1
           $Env:PATH += ";$Env:USERPROFILE\.dotnet\tools"
 
-      # 4. Починаємо аналіз SonarCloud
       - name: Begin SonarCloud analysis
         shell: pwsh
         run: |
-          $coverageDir = "$Env:GITHUB_WORKSPACE\coverage"
-          New-Item -ItemType Directory -Force -Path $coverageDir
-          $coverageFile = "$coverageDir\coverage.opencover.xml"
-
+          $coveragePath = "$($Env:GITHUB_WORKSPACE)\coverage.opencover.xml"
           dotnet sonarscanner begin `
             /k:"bipolare_reverse-engineering-software" `
             /o:"bipolare" `
             /d:sonar.login="$Env:SONAR_TOKEN" `
-            /d:sonar.cs.opencover.reportsPaths="$coverageFile"
+            /d:sonar.cs.opencover.reportsPaths="$coveragePath"
 
-      # 5. Відновлюємо залежності
       - name: Restore dependencies
         run: dotnet restore DummyProject.sln
 
-      # 6. Збираємо проєкт
       - name: Build solution
-        run: dotnet build DummyProject.sln --configuration Release
+        run: dotnet build DummyProject.sln --no-restore --configuration Release
 
-      # 7. Запускаємо тести з coverage
       - name: Run tests with coverage
         shell: pwsh
         run: |
-          $coverageDir = "$Env:GITHUB_WORKSPACE\coverage"
-          $coverageFile = "$coverageDir\coverage.opencover.xml"
-
+          $coveragePath = "$($Env:GITHUB_WORKSPACE)\coverage.opencover.xml"
           dotnet test DummyProject.sln `
             --no-build `
             --configuration Release `
             /p:CollectCoverage=true `
-            /p:CoverletOutput="$coverageFile" `
+            /p:CoverletOutput=$coveragePath `
             /p:CoverletOutputFormat=opencover
+          if (-not (Test-Path $coveragePath)) {
+              Write-Error "Coverage file not found: $coveragePath"
+              exit 1
+          }
 
-      # 8. Завершуємо аналіз SonarCloud
       - name: End SonarCloud analysis
         shell: pwsh
         run: dotnet sonarscanner end /d:sonar.login="$Env:SONAR_TOKEN"
