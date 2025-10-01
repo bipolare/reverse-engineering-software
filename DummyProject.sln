@@ -1,4 +1,0 @@
-# Находимся в корне репозитория
-dotnet new console -n DummyProject        # Создаём консольный проект
-dotnet new sln                             # Создаём новое решение
-dotnet sln add DummyProject/DummyProject.csproj   # Добавляем проект в решение
