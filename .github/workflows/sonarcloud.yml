@@ -2,7 +2,7 @@ name: SonarCloud analysis
 
 on:
   push:
-    branches: [ "main" ]   # или master, если у тебя основная ветка master
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
