@@ -14,7 +14,6 @@ jobs:
   sonar-check:
     name: Sonar Check
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,7 +39,7 @@ jobs:
           /d:sonar.qualitygate.wait=true
         shell: pwsh
 
-      # 2) BUILD & TEST
+      # 2) BUILD & RESTORE
       - name: Restore
         run: dotnet restore DummyProject.sln
       - name: Build
