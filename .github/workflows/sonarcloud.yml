@@ -14,9 +14,11 @@ jobs:
   sonar-check:
     name: Sonar Check
     runs-on: windows-latest
+
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -28,7 +30,7 @@ jobs:
           dotnet tool install --global dotnet-sonarscanner
           echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
           dotnet sonarscanner begin `
-          /k:"bipolare_DummyProject" `
+          /k:"bipolare_reverse-engineering-software" `
           /o:"bipolare" `
           /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
           /d:sonar.cs.opencover.reportsPaths="**/coverage.xml" `
@@ -38,7 +40,7 @@ jobs:
           /d:sonar.qualitygate.wait=true
         shell: pwsh
 
-      # 2) BUILD
+      # 2) BUILD & TEST
       - name: Restore
         run: dotnet restore DummyProject.sln
       - name: Build
