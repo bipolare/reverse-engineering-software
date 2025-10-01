@@ -1,0 +1,8 @@
+# Создать новый минимальный проект в репо
+dotnet new console -n DummyProject
+cd DummyProject
+dotnet new sln
+dotnet sln add DummyProject.csproj
+git add .
+git commit -m "Add minimal project for SonarCloud"
+git push origin <имя_ветки>
