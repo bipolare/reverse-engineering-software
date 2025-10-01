@@ -1,19 +1,19 @@
-name: .NET Core + SonarCloud
+name: .NET CI with SonarCloud
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
-    name: Build and Analyze
+    name: Build, Test, Coverage & SonarCloud
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
@@ -21,33 +21,23 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Install dependencies
-      run: dotnet restore
+      run: dotnet restore DummyProject.sln
 
-    - name: Build solution
-      run: dotnet build --no-restore --configuration Release
+    - name: Build
+      run: dotnet build DummyProject.sln --configuration Release --no-restore
 
-    - name: Run tests with coverage
+    - name: Run Tests with Coverage
       run: |
         dotnet test DummyProject.sln `
           --configuration Release `
           /p:CollectCoverage=true `
+          /p:CoverletOutput="$Env:GITHUB_WORKSPACE\coverage.opencover.xml" `
           /p:CoverletOutputFormat=opencover `
-          /p:CoverletOutput=$(System.DefaultWorkingDirectory)\coverage.opencover.xml `
           /p:Exclude="[xunit*]*"
-
-    - name: Setup SonarCloud
-      uses: SonarSource/sonarcloud-github-action@v2.1.0
+    
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@v2.2
       with:
-        organization: ${{ secrets.SONAR_ORGANIZATION }}
-        token: ${{ secrets.SONAR_TOKEN }}
-
-    - name: Run SonarCloud analysis
-      run: |
-        dotnet sonarscanner begin /k:"bipolare_reverse-engineering-software" `
-          /o:"bipolare" `
-          /d:sonar.login="${{ secrets.SONAR_TOKEN }}" `
-          /d:sonar.cs.opencover.reportsPaths="$(System.DefaultWorkingDirectory)\coverage.opencover.xml"
-
-        dotnet build DummyProject.sln
-
-        dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+        args: >
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          -Dsonar.cs.opencover.reportsPaths="$Env:GITHUB_WORKSPACE\coverage.opencover.xml"
