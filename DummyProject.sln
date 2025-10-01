@@ -1,8 +1,4 @@
-# В корне репозитория
-dotnet new console -n DummyProject
-dotnet new sln
-dotnet sln add DummyProject/DummyProject.csproj
-git add DummyProject/
-git add DummyProject.sln
-git commit -m "Add working DummyProject solution"
-git push origin main
+# Находимся в корне репозитория
+dotnet new console -n DummyProject        # Создаём консольный проект
+dotnet new sln                             # Создаём новое решение
+dotnet sln add DummyProject/DummyProject.csproj   # Добавляем проект в решение
