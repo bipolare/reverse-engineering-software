@@ -29,35 +29,36 @@ jobs:
           dotnet tool install --global dotnet-sonarscanner --version 10.4.1
           $Env:PATH += ";$Env:USERPROFILE\.dotnet\tools"
 
+      - name: Restore dependencies
+        run: dotnet restore DummyProject.sln
+
       - name: Begin SonarCloud analysis
         shell: pwsh
         run: |
-          $coveragePath = "$($Env:GITHUB_WORKSPACE)\coverage.opencover.xml"
           dotnet sonarscanner begin `
             /k:"bipolare_reverse-engineering-software" `
             /o:"bipolare" `
             /d:sonar.login="$Env:SONAR_TOKEN" `
-            /d:sonar.cs.opencover.reportsPaths="$coveragePath"
-
-      - name: Restore dependencies
-        run: dotnet restore DummyProject.sln
+            /d:sonar.cs.opencover.reportsPaths="$Env:GITHUB_WORKSPACE\DummyProject\coverage.opencover.xml"
 
       - name: Build solution
         run: dotnet build DummyProject.sln --no-restore --configuration Release
 
       - name: Run tests with coverage
-        shell: pwsh
         run: |
-          $coveragePath = "$($Env:GITHUB_WORKSPACE)\coverage.opencover.xml"
           dotnet test DummyProject.sln `
             --no-build `
             --configuration Release `
             /p:CollectCoverage=true `
-            /p:CoverletOutput=$coveragePath `
+            /p:CoverletOutput="$Env:GITHUB_WORKSPACE\DummyProject\coverage.opencover.xml" `
             /p:CoverletOutputFormat=opencover
-          if (-not (Test-Path $coveragePath)) {
-              Write-Error "Coverage file not found: $coveragePath"
-              exit 1
+
+      - name: Verify coverage file
+        shell: pwsh
+        run: |
+          if (-Not (Test-Path "$Env:GITHUB_WORKSPACE\DummyProject\coverage.opencover.xml")) {
+            Write-Error "Coverage file not found!"
+            exit 1
           }
 
       - name: End SonarCloud analysis
