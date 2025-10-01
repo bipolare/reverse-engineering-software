@@ -29,15 +29,6 @@ jobs:
           dotnet tool install --global dotnet-sonarscanner --version 10.4.1
           $Env:PATH += ";$Env:USERPROFILE\.dotnet\tools"
 
-      - name: Find test project
-        id: find-tests
-        shell: pwsh
-        run: |
-          $testProj = Get-ChildItem -Path $Env:GITHUB_WORKSPACE -Recurse -Filter "*.Tests.csproj" | Select-Object -First 1
-          if (-not $testProj) { throw "No test project found!" }
-          echo "Test project found: $($testProj.FullName)"
-          echo "testProj=$($testProj.FullName)" >> $Env:GITHUB_ENV
-
       - name: Begin SonarCloud analysis
         shell: pwsh
         run: |
@@ -48,17 +39,18 @@ jobs:
             /d:sonar.cs.opencover.reportsPaths="$Env:GITHUB_WORKSPACE\coverage\coverage.opencover.xml"
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore DummyProject.sln
 
       - name: Build solution
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build DummyProject.sln --no-restore --configuration Release
 
       - name: Run tests with coverage
         shell: pwsh
         run: |
           $coverageDir = "$Env:GITHUB_WORKSPACE\coverage"
           if (-not (Test-Path $coverageDir)) { New-Item -ItemType Directory -Path $coverageDir }
-          dotnet test "$Env:testProj" `
+
+          dotnet test "$Env:GITHUB_WORKSPACE\DummyProject.Tests\DummyProject.Tests.csproj" `
             --no-build `
             --configuration Release `
             /p:CollectCoverage=true `
